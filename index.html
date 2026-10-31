@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>l8z4</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    img {
+      -webkit-user-drag: none;
+      user-drag: none;
+    }
+
+    #custom-context-menu {
+      --shake: 0px;
+      position: fixed;
+      z-index: 10000;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(8px) scale(.85);
+      transition: opacity .3s ease, transform .3s cubic-bezier(.2, .8, .2, 1);
+      text-shadow: 0 0 12px currentColor;
+    }
+    #custom-context-menu.show {
+      opacity: 1;
+      transform: none;
+    }
+    #custom-context-menu.pop {
+      animation: menu-pop .35s cubic-bezier(.2, .8, .2, 1), menu-shake .4s linear;
+    }
+    @keyframes menu-pop {
+      0%   { transform: translateY(10px) scale(.6); }
+      60%  { transform: translateY(-3px) scale(1.15); }
+      100% { transform: none; }
+    }
+    @keyframes menu-shake {
+      0%, 100% { translate: 0 0; }
+      20% { translate: calc(var(--shake) * -1) calc(var(--shake) * .5); }
+      40% { translate: var(--shake) calc(var(--shake) * -.5); }
+      60% { translate: calc(var(--shake) * -.7) 0; }
+      80% { translate: calc(var(--shake) * .7) 0; }
+    }
+
+    body::after {
+      content: "";
+      position: fixed; inset: 0; z-index: 9000;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(255, 0, 0, .35) 100%);
+      opacity: var(--rage, 0);
+      transition: opacity .4s ease;
+    }
+
+    #screamer-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #000;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.4s ease, visibility 1.4s;
+      visibility: hidden;
+    }
+    #screamer-overlay.show {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity .05s linear;
+    }
+    #screamer-overlay video {
+      width: 100vw;
+      height: 100vh;
+      width: 100dvw;
+      height: 100dvh;
+      object-fit: contain;
+    }
+    #screamer-overlay.show video {
+      animation: scream-zoom 1.5s ease-out forwards, scream-shake .08s linear infinite;
+    }
+    @keyframes scream-zoom {
+      from { scale: 1;    filter: contrast(1.2) saturate(1.3); }
+      to   { scale: 1.12; filter: contrast(1.6) saturate(1.8) brightness(1.1); }
+    }
+    @keyframes scream-shake {
+      0%   { translate: 0 0; }
+      25%  { translate: -6px 4px; }
+      50%  { translate: 5px -5px; }
+      75%  { translate: -4px -3px; }
+      100% { translate: 3px 5px; }
+    }
+
+    #sorry-msg {
+      animation: none;
+    }
+    #custom-context-menu.sorry {
+      font-size: 22px;
+      transform: translate(-50%, -50%);
+      animation: sorry-in .8s cubic-bezier(.2, .8, .2, 1) backwards;
+    }
+    @keyframes sorry-in {
+      from { opacity: 0; filter: blur(8px); letter-spacing: .5em; }
+      to   { opacity: 1; filter: blur(0);   letter-spacing: .05em; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="aurora">
+    <div class="stars"></div>
+    <div class="band"></div><div class="band"></div><div class="band"></div>
+  </div>
+
+  <div id="enter"><span data-i18n="enter">click to enter</span></div>
+
+  <div id="toast">
+    <div class="eq"><i></i><i></i><i></i></div>
+    <div><small data-i18n="now">Now playing</small><b id="toast-text"></b></div>
+  </div>
+
+  <div class="lang" id="lang">
+    <button class="lang-btn fx" id="lang-btn" data-i18n-aria="language" aria-haspopup="true" aria-expanded="false">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up preview-icon"><path d="m18 15-6-6-6 6"/></svg>
+      <span id="lang-code">EN</span>
+    </button>
+    <ul class="lang-menu" id="lang-menu" role="menu"></ul>
+  </div>
+
+  <div class="views" id="views">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+    <b id="views-count">0</b>
+    <span data-i18n="views">views</span>
+  </div>
+
+  <main>
+    <section class="card">
+
+      <header class="profile reveal r1">
+        <div class="avatar"><img src="avatar.jpg" alt="l8z4" draggable="false"></div>
+        <h1>l8z4</h1>
+        <p class="tag" data-i18n="role">developer</p>
+      </header>
+
+      <nav class="links">
+        <a class="link fx reveal r2" href="https://discord.gg/cs7Jhuqaxd" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.6 18.6 0 0 0-5.487 0a12 12 0 0 0-.617-1.23A.08.08 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.1.1 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055a20 20 0 0 0 5.993 2.98a.08.08 0 0 0 .084-.026a14 14 0 0 0 1.226-1.963a.074.074 0 0 0-.041-.104a13 13 0 0 1-1.872-.878a.075.075 0 0 1-.008-.125q.19-.14.372-.287a.08.08 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.08.08 0 0 1 .079.009q.18.148.372.288a.075.075 0 0 1-.006.125q-.895.515-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.08.08 0 0 0 .084.028a20 20 0 0 0 6.002-2.981a.08.08 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028M8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38c0-1.312.956-2.38 2.157-2.38c1.21 0 2.176 1.077 2.157 2.38c0 1.312-.956 2.38-2.157 2.38m7.975 0c-1.183 0-2.157-1.069-2.157-2.38c0-1.312.955-2.38 2.157-2.38c1.21 0 2.176 1.077 2.157 2.38c0 1.312-.946 2.38-2.157 2.38"/></svg>
+          <span>Discord</span>
+        </a>
+        <a class="link fx reveal r3" href="https://www.youtube.com/@lz4dev" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M23.5 6.507a2.8 2.8 0 0 0-.766-1.27a3.05 3.05 0 0 0-1.338-.742C19.518 4 11.994 4 11.994 4a77 77 0 0 0-9.39.47a3.16 3.16 0 0 0-1.338.76c-.37.356-.638.795-.778 1.276A29 29 0 0 0 0 12c-.012 1.841.151 3.68.488 5.494c.137.479.404.916.775 1.269s.833.608 1.341.743c1.903.494 9.39.494 9.39.494a77 77 0 0 0 9.402-.47a3.05 3.05 0 0 0 1.338-.742a2.8 2.8 0 0 0 .765-1.27A28.4 28.4 0 0 0 24 12.023a26.6 26.6 0 0 0-.5-5.517M9.602 15.424V8.577l6.26 3.424z"/></svg>
+          <span>YouTube</span>
+        </a>
+        <a class="link fx reveal r4" href="https://github.com/zyresrcs" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385c.6.105.825-.255.825-.57c0-.285-.015-1.23-.015-2.235c-3.015.555-3.795-.735-4.035-1.41c-.135-.345-.72-1.41-1.23-1.695c-.42-.225-1.02-.78-.015-.795c.945-.015 1.62.87 1.845 1.23c1.08 1.815 2.805 1.305 3.495.99c.105-.78.42-1.305.765-1.605c-2.67-.3-5.46-1.335-5.46-5.925c0-1.305.465-2.385 1.23-3.225c-.12-.3-.54-1.53.12-3.18c0 0 1.005-.315 3.3 1.23c.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23c.66 1.65.24 2.88.12 3.18c.765.84 1.23 1.905 1.23 3.225c0 4.605-2.805 5.625-5.475 5.925c.435.375.81 1.095.81 2.22c0 1.605-.015 2.895-.015 3.3c0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12"/></svg>
+          <span>GitHub</span>
+        </a>
+        <a class="link fx reveal r5" href="https://roblox.com/users/10701483053/profile" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M5.825 4.134a2 2 0 0 1 2.45-1.414l11.591 3.105a2 2 0 0 1 1.414 2.45l-3.105 11.591a2 2 0 0 1-2.45 1.414L4.134 18.175a2 2 0 0 1-1.414-2.45zm3.113 9.633l4.83 1.294l1.293-4.829l-4.829-1.294z"/></svg>
+          <span>Roblox</span>
+        </a>
+      </nav>
+
+      <section class="player reveal r6">
+        <div class="now">
+          <div class="eq"><i></i><i></i><i></i></div>
+          <div class="meta">
+            <small data-i18n="now">Now playing</small>
+            <div id="title">—</div>
+            <div id="artist"></div>
+          </div>
+          <div class="count" id="count">1 / 3</div>
+        </div>
+
+        <div class="seek">
+          <span id="cur">0:00</span>
+          <div class="bar" id="bar"><div id="fill"></div></div>
+          <span id="dur">0:00</span>
+        </div>
+
+        <div class="controls">
+          <div class="btns">
+            <button class="ico fx" id="prev" data-i18n-aria="prev">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>
+            </button>
+            <button class="ico play fx" id="play" data-i18n-aria="play">
+              <svg id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="i-pause" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+            </button>
+            <button class="ico fx" id="next" data-i18n-aria="next">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>
+            </button>
+          </div>
+          <div class="vol">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+            <input type="range" id="vol" min="0" max="100" value="60" data-i18n-aria="volume">
+          </div>
+        </div>
+      </section>
+
+    </section>
+  </main>
+
+  <div class="cursor" id="cursor" aria-hidden="true"><div class="cross"></div></div>
+
+  <div id="custom-context-menu">Source in my github ^_~</div>
+
+  <div id="screamer-overlay">
+    <video id="screamer-video" src="screamer.mp4" preload="auto"></video>
+  </div>
+
+  <audio id="audio" preload="auto"></audio>
+  <script src="script.js"></script>
+  <script>
+    const menu = document.getElementById('custom-context-menu');
+    const screamerOverlay = document.getElementById('screamer-overlay');
+    const screamerVideo = document.getElementById('screamer-video');
+    let hideTimer = null;
+    let clickCount = 0;
+
+    const angryMessages = [
+      "source in my github ^_~",
+      "i already told you, it's in my github",
+      "the source is in my github. stop clicking",
+      "it's in my GITHUB, go look there...",
+      "i said it's in my github, why do you keep clicking?",
+      "there's nothing else here, it's all in my github",
+      "github.com/zyresrcs. go. now.",
+      "do you not read?? IT'S IN MY GITHUB",
+      "i'm not telling you again, it's in my github...",
+      "last time: MY. GITHUB.",
+      "you keep right clicking and it's STILL in my github",
+      "i'm getting really mad, source = github!!",
+      "GO TO MY GITHUB OR ELSE",
+      "im gonna scream u in the next right click"
+    ];
+
+    function getRedColor(step, total) {
+      const r = 91 + Math.round((255 - 91) * (step / total));
+      const g = 65 - Math.round(65 * (step / total));
+      const b = 139 - Math.round(139 * (step / total));
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    const MENU_MS = 1500;
+    const SCREAM_MS = 1500;
+    const SORRY_MS = 3000;
+    const TRIGGER_AT = 15;
+    let screaming = false;
+    let screamTimer = null;
+    let calmTimer = null;
+
+    screamerVideo.load();
+
+    function restartPop() {
+      menu.classList.remove('pop');
+      void menu.offsetWidth;
+      menu.classList.add('pop');
+    }
+
+    function showMenu(text, color, x, y, shake = 0, duration = MENU_MS) {
+      clearTimeout(hideTimer);
+      menu.classList.remove('sorry');
+      menu.textContent = text;
+      menu.style.color = color;
+      menu.style.setProperty('--shake', `${shake}px`);
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
+      menu.classList.add('show');
+      restartPop();
+      hideTimer = setTimeout(() => menu.classList.remove('show'), duration);
+    }
+
+    function enterFullscreen() {
+      const el = screamerOverlay;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (req) { try { const p = req.call(el); if (p && p.catch) p.catch(() => {}); } catch {} }
+    }
+
+    function exitFullscreen() {
+      const fs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!fs) return;
+      const ex = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (ex) { try { const p = ex.call(document); if (p && p.catch) p.catch(() => {}); } catch {} }
+    }
+
+    function startScreamer() {
+      screaming = true;
+      clickCount = 0;
+      menu.classList.remove('show');
+      document.body.style.setProperty('--rage', 0);
+
+      try { if (typeof audio !== 'undefined' && !audio.paused) audio.dataset.wasPlaying = '1'; audio.volume = 0; } catch {}
+
+      screamerOverlay.classList.add('show');
+      enterFullscreen();
+
+      screamerVideo.pause();
+      screamerVideo.currentTime = 0;
+      screamerVideo.muted = false;
+      screamerVideo.volume = 1;
+      const p = screamerVideo.play();
+      if (p && p.catch) p.catch(() => {});
+
+      clearTimeout(screamTimer);
+      screamTimer = setTimeout(endScreamer, SCREAM_MS);
+    }
+
+    function endScreamer() {
+      if (!screaming) return;
+      screaming = false;
+      screamerVideo.pause();
+      screamerOverlay.classList.remove('show');
+
+      setTimeout(() => {
+        exitFullscreen();
+        try { if (typeof applyVolume === 'function') applyVolume(); } catch {}
+        showMenu('sorry', '#5b418b', window.innerWidth / 2, window.innerHeight / 2, 0, SORRY_MS);
+        menu.classList.add('sorry');
+      }, 1400);
+    }
+
+    screamerVideo.addEventListener('ended', endScreamer);
+
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (screaming) return;
+
+      clickCount++;
+
+      if (clickCount >= TRIGGER_AT) {
+        startScreamer();
+        return;
+      }
+
+      clearTimeout(calmTimer);
+      calmTimer = setTimeout(() => {
+        clickCount = 0;
+        document.body.style.setProperty('--rage', 0);
+      }, 6000);
+
+      const index = Math.min(clickCount - 1, angryMessages.length - 1);
+      const last = angryMessages.length - 1;
+      document.body.style.setProperty('--rage', (index / last) * 0.9);
+      showMenu(
+        angryMessages[index],
+        getRedColor(index, last),
+        e.clientX + 10,
+        e.clientY - 30,
+        Math.round((index / last) * 6)
+      );
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && screaming) endScreamer();
+    });
+
+    document.addEventListener('click', () => {
+      if (screaming) return;
+      clearTimeout(hideTimer);
+      menu.classList.remove('show');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !screaming) {
+        clearTimeout(hideTimer);
+        menu.classList.remove('show');
+      }
+    });
+  </script>
+</body>
+</html>
+
+<!-- 
+source by : l8z4 
+discord : https://discord.gg/cs7Jhuqaxd 
+-->
